@@ -11,6 +11,7 @@ export interface Task {
   name: string;
   start_date: string;
   end_date: string;
+  duration?: number; // duração em dias úteis
   assigned_to: number;
   status: 'pendente' | 'em progresso' | 'concluída';
   created_at?: string;
@@ -22,6 +23,7 @@ export interface TaskFormData {
   name: string;
   start_date: string;
   end_date: string;
+  duration?: number;
   assigned_to: number;
   status: 'pendente' | 'em progresso' | 'concluída';
 }

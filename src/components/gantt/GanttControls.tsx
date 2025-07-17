@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, Settings, User, Trash2 } from 'lucide-react';
+import { Calendar, Plus, User, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User as UserType } from '@/types/task';
 
 interface GanttControlsProps {
@@ -13,7 +12,7 @@ interface GanttControlsProps {
   endDate: Date;
   users: UserType[];
   onDateRangeChange: (startDate: Date, endDate: Date) => void;
-  onAddUser: (userData: { name: string; email: string }) => void;
+  onAddUser: (userData: { name: string; email?: string }) => void;
   onRemoveUser: (userId: number) => void;
   onNewTask: () => void;
 }
@@ -31,14 +30,17 @@ export const GanttControls: React.FC<GanttControlsProps> = ({
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [periodMonths, setPeriodMonths] = useState('3');
+  const [tempStartDate, setTempStartDate] = useState(startDate.toISOString().split('T')[0]);
+  const [tempEndDate, setTempEndDate] = useState(endDate.toISOString().split('T')[0]);
 
   const handleDateRangeUpdate = () => {
-    const monthsToAdd = parseInt(periodMonths);
-    const newEndDate = new Date(startDate);
-    newEndDate.setMonth(newEndDate.getMonth() + monthsToAdd);
-    onDateRangeChange(startDate, newEndDate);
-    setIsDateDialogOpen(false);
+    const newStart = new Date(tempStartDate);
+    const newEnd = new Date(tempEndDate);
+    
+    if (newStart <= newEnd) {
+      onDateRangeChange(newStart, newEnd);
+      setIsDateDialogOpen(false);
+    }
   };
 
   const handleAddUser = () => {
@@ -69,7 +71,7 @@ export const GanttControls: React.FC<GanttControlsProps> = ({
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Configurar Período do Gráfico</DialogTitle>
+            <DialogTitle>Definir Período do Gráfico</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -77,26 +79,19 @@ export const GanttControls: React.FC<GanttControlsProps> = ({
               <Input
                 id="start-date"
                 type="date"
-                value={startDate.toISOString().split('T')[0]}
-                onChange={(e) => {
-                  const newStart = new Date(e.target.value);
-                  onDateRangeChange(newStart, endDate);
-                }}
+                value={tempStartDate}
+                onChange={(e) => setTempStartDate(e.target.value)}
               />
             </div>
             <div>
-              <Label htmlFor="period">Período (meses)</Label>
-              <Select value={periodMonths} onValueChange={setPeriodMonths}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3 meses</SelectItem>
-                  <SelectItem value="4">4 meses</SelectItem>
-                  <SelectItem value="5">5 meses</SelectItem>
-                  <SelectItem value="6">6 meses</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="end-date">Data de Término</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={tempEndDate}
+                onChange={(e) => setTempEndDate(e.target.value)}
+                min={tempStartDate}
+              />
             </div>
             <Button onClick={handleDateRangeUpdate} className="w-full">
               Atualizar Período

@@ -52,24 +52,33 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
     }
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', task.id.toString());
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <div
       className={cn(
         'absolute top-2 h-12 rounded cursor-move transition-all duration-200 group',
         getStatusColor(task.status),
-        isDragging && 'opacity-70 scale-105 shadow-lg'
+        isDragging && 'opacity-70 scale-105 shadow-lg z-10'
       )}
       style={{
         left: position.left,
-        width: Math.max(position.width, 100),
+        width: Math.max(position.width, 120),
         zIndex: isDragging ? 10 : 1
       }}
       onMouseDown={onMouseDown}
+      draggable
+      onDragStart={handleDragStart}
     >
       <div className="flex items-center justify-between h-full px-2 text-white text-sm">
         <div className="flex-1 min-w-0">
           <div className="font-medium truncate">{task.name}</div>
-          <div className="text-xs opacity-90">{getStatusText(task.status)}</div>
+          <div className="text-xs opacity-90">
+            {getStatusText(task.status)} • {position.duration} dias úteis
+          </div>
         </div>
         
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

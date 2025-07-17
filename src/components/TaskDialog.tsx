@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Task, TaskFormData, User } from '@/types/task';
+import { addWorkingDays, calculateWorkingDays } from '@/utils/workingDays';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -36,28 +38,51 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
   users,
   loading = false
 }) => {
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<TaskFormData>({
-    defaultValues: task ? {
-      name: task.name,
-      start_date: task.start_date,
-      end_date: task.end_date,
-      assigned_to: task.assigned_to,
-      status: task.status
-    } : {
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<TaskFormData & { duration: number }>({
+    defaultValues: {
       name: '',
       start_date: '',
       end_date: '',
-      assigned_to: 1,
+      duration: 1,
+      assigned_to: users[0]?.id || 1,
       status: 'pendente'
     }
   });
 
-  React.useEffect(() => {
+  const watchStartDate = watch('start_date');
+  const watchDuration = watch('duration');
+  const watchEndDate = watch('end_date');
+
+  // Calcular data final baseada na data inicial e duração
+  useEffect(() => {
+    if (watchStartDate && watchDuration && watchDuration > 0) {
+      const startDate = new Date(watchStartDate);
+      const endDate = addWorkingDays(startDate, watchDuration - 1);
+      setValue('end_date', format(endDate, 'yyyy-MM-dd'));
+    }
+  }, [watchStartDate, watchDuration, setValue]);
+
+  // Calcular duração baseada nas datas inicial e final
+  useEffect(() => {
+    if (watchStartDate && watchEndDate && !watchDuration) {
+      const startDate = new Date(watchStartDate);
+      const endDate = new Date(watchEndDate);
+      const duration = calculateWorkingDays(startDate, endDate);
+      setValue('duration', duration);
+    }
+  }, [watchStartDate, watchEndDate, watchDuration, setValue]);
+
+  useEffect(() => {
     if (task) {
+      const startDate = new Date(task.start_date);
+      const endDate = new Date(task.end_date);
+      const duration = calculateWorkingDays(startDate, endDate);
+      
       reset({
         name: task.name,
         start_date: task.start_date,
         end_date: task.end_date,
+        duration: duration,
         assigned_to: task.assigned_to,
         status: task.status
       });
@@ -66,18 +91,20 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
         name: '',
         start_date: '',
         end_date: '',
+        duration: 1,
         assigned_to: users[0]?.id || 1,
         status: 'pendente'
       });
     }
   }, [task, users, reset]);
 
-  const onFormSubmit = async (data: TaskFormData) => {
+  const onFormSubmit = async (data: TaskFormData & { duration: number }) => {
     try {
-      await onSubmit(data);
+      const { duration, ...taskData } = data;
+      await onSubmit(taskData);
       onClose();
     } catch (error) {
-      // Error handling is done in the hook
+      console.error('Erro ao salvar tarefa:', error);
     }
   };
 
@@ -117,25 +144,31 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date">Data de Término</Label>
+              <Label htmlFor="duration">Duração (dias úteis)</Label>
               <Input
-                id="end_date"
-                type="date"
-                {...register('end_date', { 
-                  required: 'Data de término é obrigatória',
-                  validate: (value) => {
-                    const startDate = watch('start_date');
-                    if (startDate && value && new Date(value) < new Date(startDate)) {
-                      return 'Data de término deve ser posterior à data de início';
-                    }
-                    return true;
-                  }
+                id="duration"
+                type="number"
+                min="1"
+                {...register('duration', { 
+                  required: 'Duração é obrigatória',
+                  min: { value: 1, message: 'Duração deve ser pelo menos 1 dia' }
                 })}
               />
-              {errors.end_date && (
-                <p className="text-sm text-red-500">{errors.end_date.message}</p>
+              {errors.duration && (
+                <p className="text-sm text-red-500">{errors.duration.message}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="end_date">Data de Término (calculada automaticamente)</Label>
+            <Input
+              id="end_date"
+              type="date"
+              value={watch('end_date')}
+              readOnly
+              className="bg-gray-100"
+            />
           </div>
 
           <div className="space-y-2">

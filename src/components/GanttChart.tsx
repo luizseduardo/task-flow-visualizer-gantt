@@ -4,6 +4,7 @@ import { Task } from '@/types/task';
 import { GanttDateHeader } from './gantt/GanttDateHeader';
 import { GanttTimeline } from './gantt/GanttTimeline';
 import { GanttControls } from './gantt/GanttControls';
+import { calculateWorkingDays, addWorkingDays } from '@/utils/workingDays';
 import { format, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, addDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User } from '@/types/task';
@@ -11,7 +12,7 @@ import { User } from '@/types/task';
 interface GanttChartProps {
   tasks: Task[];
   users: User[];
-  onTaskUpdate: (taskId: number, updates: { start_date: string; end_date: string }) => void;
+  onTaskUpdate: (taskId: number, updates: { start_date: string; end_date: string; assigned_to?: number }) => void;
   onTaskEdit: (task: Task) => void;
   onTaskDelete: (taskId: number) => void;
   onNewTask: () => void;
@@ -65,6 +66,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
   const groupedTasks = useMemo(() => {
     const groups: { [key: string]: Task[] } = {};
+    
+    // Primeiro, criar grupos para todos os usuários
+    users.forEach(user => {
+      groups[user.name] = [];
+    });
+    
+    // Depois, adicionar tarefas aos grupos correspondentes
     tasks.forEach(task => {
       const userKey = task.user?.name || `Usuário ${task.assigned_to}`;
       if (!groups[userKey]) {
@@ -72,8 +80,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       }
       groups[userKey].push(task);
     });
+    
     return groups;
-  }, [tasks]);
+  }, [tasks, users]);
 
   const handleTaskDrag = useCallback((taskId: number, newStartDate: Date) => {
     const task = tasks.find(t => t.id === taskId);
@@ -81,8 +90,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
     const originalStart = new Date(task.start_date);
     const originalEnd = new Date(task.end_date);
-    const duration = differenceInDays(originalEnd, originalStart);
-    const newEndDate = addDays(newStartDate, duration);
+    const workingDays = calculateWorkingDays(originalStart, originalEnd);
+    const newEndDate = addWorkingDays(newStartDate, workingDays - 1);
 
     onTaskUpdate(taskId, {
       start_date: format(newStartDate, 'yyyy-MM-dd'),
@@ -144,12 +153,18 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             <div key={userKey} className="border-b">
               <div className="p-4 bg-gray-50">
                 <h4 className="font-medium text-gray-800">{userKey}</h4>
+                <div className="text-xs text-gray-500 mt-1">
+                  {groupedTasks[userKey].length} tarefa(s)
+                </div>
               </div>
               {groupedTasks[userKey].map(task => (
                 <div key={task.id} className="p-2 pl-6 bg-white border-b border-gray-100">
                   <div className="text-sm text-gray-600">{task.name}</div>
                   <div className="text-xs text-gray-400">
                     {format(new Date(task.start_date), 'dd/MM', { locale: ptBR })} - {format(new Date(task.end_date), 'dd/MM', { locale: ptBR })}
+                    <span className="ml-2">
+                      ({calculateWorkingDays(new Date(task.start_date), new Date(task.end_date))} dias úteis)
+                    </span>
                   </div>
                 </div>
               ))}
