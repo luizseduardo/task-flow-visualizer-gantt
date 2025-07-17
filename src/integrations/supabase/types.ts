@@ -14,7 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      tasks: {
+        Row: {
+          assigned_to: number | null
+          created_at: string | null
+          end_date: string
+          id: number
+          name: string
+          start_date: string
+          status: Database["public"]["Enums"]["task_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: number | null
+          created_at?: string | null
+          end_date: string
+          id?: number
+          name: string
+          start_date: string
+          status?: Database["public"]["Enums"]["task_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: number | null
+          created_at?: string | null
+          end_date?: string
+          id?: number
+          name?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["task_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +84,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_status: "pendente" | "em progresso" | "concluída"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +211,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_status: ["pendente", "em progresso", "concluída"],
+    },
   },
 } as const
