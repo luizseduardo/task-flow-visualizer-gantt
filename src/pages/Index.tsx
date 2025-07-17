@@ -14,28 +14,35 @@ const Index = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
+  console.log('Index component - tasks:', tasks, 'users:', users);
+
   const handleCreateTask = async (data: TaskFormData) => {
+    console.log('Creating task:', data);
     await createTask(data);
   };
 
   const handleUpdateTask = async (data: TaskFormData) => {
     if (editingTask) {
+      console.log('Updating task:', editingTask.id, data);
       await updateTask(editingTask.id, data);
       setEditingTask(null);
     }
   };
 
   const handleTaskDrag = async (taskId: number, updates: { start_date: string; end_date: string }) => {
+    console.log('Dragging task:', taskId, updates);
     await updateTask(taskId, updates);
   };
 
   const handleEditTask = (task: Task) => {
+    console.log('Editing task:', task);
     setEditingTask(task);
     setIsDialogOpen(true);
   };
 
   const handleDeleteTask = async (taskId: number) => {
     if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+      console.log('Deleting task:', taskId);
       await deleteTask(taskId);
     }
   };
