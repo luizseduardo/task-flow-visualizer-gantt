@@ -1,53 +1,67 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Task } from '@/types/task';
-import { GanttTask } from './GanttTask';
-import { format, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, addDays } from 'date-fns';
+import { GanttDateHeader } from './gantt/GanttDateHeader';
+import { GanttTimeline } from './gantt/GanttTimeline';
+import { GanttControls } from './gantt/GanttControls';
+import { format, differenceInDays, startOfWeek, endOfWeek, eachDayOfInterval, addDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { User } from '@/types/task';
 
 interface GanttChartProps {
   tasks: Task[];
+  users: User[];
   onTaskUpdate: (taskId: number, updates: { start_date: string; end_date: string }) => void;
   onTaskEdit: (task: Task) => void;
   onTaskDelete: (taskId: number) => void;
+  onNewTask: () => void;
+  onAddUser: (userData: { name: string; email?: string }) => void;
+  onRemoveUser: (userId: number) => void;
 }
 
 export const GanttChart: React.FC<GanttChartProps> = ({
   tasks,
+  users,
   onTaskUpdate,
   onTaskEdit,
-  onTaskDelete
+  onTaskDelete,
+  onNewTask,
+  onAddUser,
+  onRemoveUser
 }) => {
   const [draggedTask, setDraggedTask] = useState<number | null>(null);
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
 
   const { startDate, endDate, dateRange, dayWidth } = useMemo(() => {
-    if (tasks.length === 0) {
+    let start: Date;
+    let end: Date;
+
+    if (customStartDate && customEndDate) {
+      start = startOfWeek(customStartDate, { locale: ptBR });
+      end = endOfWeek(customEndDate, { locale: ptBR });
+    } else if (tasks.length === 0) {
       const today = new Date();
-      const start = startOfWeek(today, { locale: ptBR });
-      const end = endOfWeek(addDays(today, 30), { locale: ptBR });
-      return {
-        startDate: start,
-        endDate: end,
-        dateRange: eachDayOfInterval({ start, end }),
-        dayWidth: 40
-      };
+      start = startOfWeek(today, { locale: ptBR });
+      end = endOfWeek(addMonths(today, 3), { locale: ptBR });
+    } else {
+      const dates = tasks.flatMap(task => [new Date(task.start_date), new Date(task.end_date)]);
+      const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+      const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+      
+      start = startOfWeek(addDays(minDate, -7), { locale: ptBR });
+      end = endOfWeek(addDays(maxDate, 7), { locale: ptBR });
     }
 
-    const dates = tasks.flatMap(task => [new Date(task.start_date), new Date(task.end_date)]);
-    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
-    
-    const start = startOfWeek(addDays(minDate, -7), { locale: ptBR });
-    const end = endOfWeek(addDays(maxDate, 7), { locale: ptBR });
     const range = eachDayOfInterval({ start, end });
     
     return {
       startDate: start,
       endDate: end,
       dateRange: range,
-      dayWidth: Math.max(30, Math.min(60, 1200 / range.length))
+      dayWidth: Math.max(35, Math.min(60, 1400 / range.length))
     };
-  }, [tasks]);
+  }, [tasks, customStartDate, customEndDate]);
 
   const groupedTasks = useMemo(() => {
     const groups: { [key: string]: Task[] } = {};
@@ -61,20 +75,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     return groups;
   }, [tasks]);
 
-  const getTaskPosition = (task: Task) => {
-    const taskStart = new Date(task.start_date);
-    const taskEnd = new Date(task.end_date);
-    const daysFromStart = differenceInDays(taskStart, startDate);
-    const duration = differenceInDays(taskEnd, taskStart) + 1;
-    
-    return {
-      left: daysFromStart * dayWidth,
-      width: duration * dayWidth,
-      duration
-    };
-  };
-
-  const handleTaskDrag = (taskId: number, newStartDate: Date) => {
+  const handleTaskDrag = useCallback((taskId: number, newStartDate: Date) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -87,9 +88,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       start_date: format(newStartDate, 'yyyy-MM-dd'),
       end_date: format(newEndDate, 'yyyy-MM-dd')
     });
-  };
+  }, [tasks, onTaskUpdate]);
 
-  const handleMouseDown = (e: React.MouseEvent, taskId: number) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, taskId: number) => {
     e.preventDefault();
     setDraggedTask(taskId);
 
@@ -114,14 +115,29 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  }, [draggedTask, dayWidth, startDate, handleTaskDrag]);
+
+  const handleDateRangeChange = (newStartDate: Date, newEndDate: Date) => {
+    setCustomStartDate(newStartDate);
+    setCustomEndDate(newEndDate);
   };
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <GanttControls
+        startDate={startDate}
+        endDate={endDate}
+        users={users}
+        onDateRangeChange={handleDateRangeChange}
+        onAddUser={onAddUser}
+        onRemoveUser={onRemoveUser}
+        onNewTask={onNewTask}
+      />
+      
       <div className="flex">
         {/* Header de usuários */}
         <div className="w-64 bg-gray-50 border-r">
-          <div className="p-4 border-b bg-gray-100">
+          <div className="p-4 border-b bg-gray-100" style={{ height: '100px' }}>
             <h3 className="font-semibold text-gray-700">Responsáveis</h3>
           </div>
           {Object.keys(groupedTasks).map(userKey => (
@@ -143,67 +159,24 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
         {/* Timeline */}
         <div className="flex-1 overflow-x-auto">
-          <div className="gantt-timeline" style={{ width: dateRange.length * dayWidth }}>
-            {/* Header de datas */}
-            <div className="flex border-b bg-gray-100" style={{ height: '60px' }}>
-              {dateRange.map(date => (
-                <div
-                  key={date.toISOString()}
-                  className="border-r border-gray-200 text-xs text-center p-2 flex flex-col justify-center"
-                  style={{ width: dayWidth, minWidth: dayWidth }}
-                >
-                  <div className="font-medium">{format(date, 'dd')}</div>
-                  <div className="text-gray-500">{format(date, 'EEE', { locale: ptBR })}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Timeline das tarefas */}
-            {Object.keys(groupedTasks).map(userKey => (
-              <div key={userKey} className="border-b">
-                {/* Header do usuário */}
-                <div className="h-12 bg-gray-50 border-b flex items-center relative">
-                  {dateRange.map(date => (
-                    <div
-                      key={date.toISOString()}
-                      className="border-r border-gray-200 h-full"
-                      style={{ width: dayWidth, minWidth: dayWidth }}
-                    />
-                  ))}
-                </div>
-                
-                {/* Tarefas do usuário */}
-                {groupedTasks[userKey].map((task, index) => {
-                  const position = getTaskPosition(task);
-                  return (
-                    <div key={task.id} className="relative h-16 border-b border-gray-100">
-                      {/* Grid de fundo */}
-                      {dateRange.map(date => (
-                        <div
-                          key={date.toISOString()}
-                          className="absolute top-0 h-full border-r border-gray-100"
-                          style={{ 
-                            left: differenceInDays(date, startDate) * dayWidth,
-                            width: dayWidth 
-                          }}
-                        />
-                      ))}
-                      
-                      {/* Barra da tarefa */}
-                      <GanttTask
-                        task={task}
-                        position={position}
-                        isDragging={draggedTask === task.id}
-                        onMouseDown={(e) => handleMouseDown(e, task.id)}
-                        onEdit={() => onTaskEdit(task)}
-                        onDelete={() => onTaskDelete(task.id)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+          <GanttDateHeader
+            startDate={startDate}
+            endDate={endDate}
+            dayWidth={dayWidth}
+          />
+          
+          <GanttTimeline
+            tasks={tasks}
+            startDate={startDate}
+            endDate={endDate}
+            dayWidth={dayWidth}
+            groupedTasks={groupedTasks}
+            draggedTask={draggedTask}
+            onTaskUpdate={onTaskUpdate}
+            onTaskEdit={onTaskEdit}
+            onTaskDelete={onTaskDelete}
+            onMouseDown={handleMouseDown}
+          />
         </div>
       </div>
     </div>

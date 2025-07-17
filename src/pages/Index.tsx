@@ -10,7 +10,7 @@ import { Task, TaskFormData } from '@/types/task';
 
 const Index = () => {
   const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask } = useTasks();
-  const { users, loading: usersLoading } = useUsers();
+  const { users, loading: usersLoading, createUser, deleteUser } = useUsers();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -47,6 +47,21 @@ const Index = () => {
     }
   };
 
+  const handleNewTask = () => {
+    setEditingTask(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleAddUser = async (userData: { name: string; email?: string }) => {
+    await createUser(userData);
+  };
+
+  const handleRemoveUser = async (userId: number) => {
+    if (confirm('Tem certeza que deseja remover este responsável?')) {
+      await deleteUser(userId);
+    }
+  };
+
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingTask(null);
@@ -71,24 +86,16 @@ const Index = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
               <Calendar className="h-8 w-8 text-primary" />
-              Gráfico de Gantt
+              Gráfico de Gantt Avançado
             </h1>
             <p className="text-muted-foreground mt-1">
-              Gerencie suas tarefas de forma visual e interativa
+              Gerencie suas tarefas com visualização aprimorada e controle de período
             </p>
           </div>
-          
-          <Button 
-            onClick={() => setIsDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Nova Tarefa
-          </Button>
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-card rounded-lg p-4 border">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
@@ -116,27 +123,41 @@ const Index = () => {
               {tasks.filter(t => t.status === 'concluída').length}
             </p>
           </div>
+
+          <div className="bg-card rounded-lg p-4 border">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-500" />
+              <span className="font-medium">Responsáveis</span>
+            </div>
+            <p className="text-2xl font-bold mt-1 text-purple-500">{users.length}</p>
+          </div>
         </div>
 
         {/* Gráfico de Gantt */}
-        {tasks.length > 0 ? (
+        {tasks.length > 0 || users.length > 0 ? (
           <GanttChart
             tasks={tasks}
+            users={users}
             onTaskUpdate={handleTaskDrag}
             onTaskEdit={handleEditTask}
             onTaskDelete={handleDeleteTask}
+            onNewTask={handleNewTask}
+            onAddUser={handleAddUser}
+            onRemoveUser={handleRemoveUser}
           />
         ) : (
           <div className="bg-card rounded-lg p-12 text-center border">
             <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Nenhuma tarefa encontrada</h3>
+            <h3 className="text-xl font-semibold mb-2">Começar com o Gráfico de Gantt</h3>
             <p className="text-muted-foreground mb-4">
-              Comece criando sua primeira tarefa para visualizar o gráfico de Gantt
+              Crie sua primeira tarefa ou adicione responsáveis para começar
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Criar Primeira Tarefa
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeira Tarefa
+              </Button>
+            </div>
           </div>
         )}
 
