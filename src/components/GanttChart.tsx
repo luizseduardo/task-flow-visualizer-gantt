@@ -88,10 +88,17 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const originalStart = new Date(task.start_date);
-    const originalEnd = new Date(task.end_date);
+    const originalStart = new Date(task.start_date + 'T00:00:00');
+    const originalEnd = new Date(task.end_date + 'T00:00:00');
     const workingDays = calculateWorkingDays(originalStart, originalEnd);
     const newEndDate = addWorkingDays(newStartDate, workingDays - 1);
+
+    console.log('🖱️ Drag da tarefa:', {
+      taskId,
+      originalDuration: workingDays,
+      newStartDate: format(newStartDate, 'yyyy-MM-dd'),
+      newEndDate: format(newEndDate, 'yyyy-MM-dd')
+    });
 
     onTaskUpdate(taskId, {
       start_date: format(newStartDate, 'yyyy-MM-dd'),
@@ -111,7 +118,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       
       const x = e.clientX - rect.left;
       const dayIndex = Math.round(x / dayWidth);
-      const newStartDate = addDays(startDate, dayIndex);
+      const ganttStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const newStartDate = addDays(ganttStart, dayIndex);
       
       handleTaskDrag(taskId, newStartDate);
     };
@@ -141,6 +149,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         onAddUser={onAddUser}
         onRemoveUser={onRemoveUser}
         onNewTask={onNewTask}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
       />
       
       <div className="flex">

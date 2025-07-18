@@ -1,5 +1,15 @@
 
-import { addDays, isWeekend, differenceInDays, eachDayOfInterval } from 'date-fns';
+import { addDays, isWeekend, differenceInDays, eachDayOfInterval, format } from 'date-fns';
+
+// Função para garantir que as datas sejam sempre no fuso horário local
+export const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+export const formatLocalDate = (date: Date): string => {
+  return format(date, 'yyyy-MM-dd');
+};
 
 export const addWorkingDays = (startDate: Date, workingDays: number): Date => {
   let currentDate = new Date(startDate);

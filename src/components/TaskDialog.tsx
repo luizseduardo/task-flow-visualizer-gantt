@@ -2,8 +2,7 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Task, TaskFormData, User } from '@/types/task';
-import { addWorkingDays, calculateWorkingDays } from '@/utils/workingDays';
-import { format } from 'date-fns';
+import { addWorkingDays, calculateWorkingDays, parseLocalDate, formatLocalDate } from '@/utils/workingDays';
 import {
   Dialog,
   DialogContent,
@@ -56,17 +55,22 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
   // Calcular data final baseada na data inicial e duração
   useEffect(() => {
     if (watchStartDate && watchDuration && watchDuration > 0) {
-      const startDate = new Date(watchStartDate);
+      console.log('🧮 Calculando data final:', { startDate: watchStartDate, duration: watchDuration });
+      
+      const startDate = parseLocalDate(watchStartDate);
       const endDate = addWorkingDays(startDate, watchDuration - 1);
-      setValue('end_date', format(endDate, 'yyyy-MM-dd'));
+      const formattedEndDate = formatLocalDate(endDate);
+      
+      console.log('🧮 Resultado:', { startDate, endDate, formattedEndDate });
+      setValue('end_date', formattedEndDate);
     }
   }, [watchStartDate, watchDuration, setValue]);
 
   // Calcular duração baseada nas datas inicial e final
   useEffect(() => {
     if (watchStartDate && watchEndDate && !watchDuration) {
-      const startDate = new Date(watchStartDate);
-      const endDate = new Date(watchEndDate);
+      const startDate = parseLocalDate(watchStartDate);
+      const endDate = parseLocalDate(watchEndDate);
       const duration = calculateWorkingDays(startDate, endDate);
       setValue('duration', duration);
     }
@@ -74,8 +78,8 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
 
   useEffect(() => {
     if (task) {
-      const startDate = new Date(task.start_date);
-      const endDate = new Date(task.end_date);
+      const startDate = parseLocalDate(task.start_date);
+      const endDate = parseLocalDate(task.end_date);
       const duration = calculateWorkingDays(startDate, endDate);
       
       reset({
@@ -100,6 +104,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({
 
   const onFormSubmit = async (data: TaskFormData & { duration: number }) => {
     try {
+      console.log('📝 Submetendo tarefa:', data);
       const { duration, ...taskData } = data;
       await onSubmit(taskData);
       onClose();

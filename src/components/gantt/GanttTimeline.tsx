@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Task } from '@/types/task';
 import { GanttTask } from '../GanttTask';
-import { calculateWorkingDays } from '@/utils/workingDays';
+import { calculateWorkingDays, addWorkingDays } from '@/utils/workingDays';
 import { differenceInDays, eachDayOfInterval, isWeekend, format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -37,15 +37,17 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({
   const dateRange = eachDayOfInterval({ start: startDate, end: endDate });
 
   const getTaskPosition = (task: Task) => {
-    const taskStart = new Date(task.start_date);
-    const taskEnd = new Date(task.end_date);
-    const daysFromStart = differenceInDays(taskStart, startDate);
+    const taskStart = new Date(task.start_date + 'T00:00:00');
+    const taskEnd = new Date(task.end_date + 'T00:00:00');
+    const ganttStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    
+    const daysFromStart = differenceInDays(taskStart, ganttStart);
     const totalDays = differenceInDays(taskEnd, taskStart) + 1;
     const workingDays = calculateWorkingDays(taskStart, taskEnd);
     
     return {
-      left: daysFromStart * dayWidth,
-      width: totalDays * dayWidth,
+      left: Math.max(0, daysFromStart * dayWidth),
+      width: Math.max(dayWidth, totalDays * dayWidth),
       duration: workingDays
     };
   };
@@ -69,7 +71,8 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({
     if (!task) return;
 
     // Encontrar o novo responsável baseado na userKey
-    const newUserId = Object.keys(groupedTasks).indexOf(userKey) + 1; // Simplificado, seria melhor ter um mapeamento real
+    const user = Object.values(groupedTasks).flat().find(t => t.user?.name === userKey)?.user;
+    const newUserId = user?.id || Object.keys(groupedTasks).indexOf(userKey) + 1;
     
     // Calcular nova posição baseada no drop
     const rect = timelineRef.current?.getBoundingClientRect();
@@ -77,11 +80,23 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({
 
     const x = e.clientX - rect.left;
     const dayIndex = Math.round(x / dayWidth);
-    const newStartDate = addDays(startDate, dayIndex);
+    const ganttStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const newStartDate = addDays(ganttStart, dayIndex);
     
     // Calcular nova data final baseada na duração da tarefa
-    const originalDuration = calculateWorkingDays(new Date(task.start_date), new Date(task.end_date));
-    const newEndDate = addDays(newStartDate, originalDuration - 1);
+    const originalStart = new Date(task.start_date + 'T00:00:00');
+    const originalEnd = new Date(task.end_date + 'T00:00:00');
+    const originalDuration = calculateWorkingDays(originalStart, originalEnd);
+    const newEndDate = addWorkingDays(newStartDate, originalDuration - 1);
+
+    console.log('🖱️ Drop da tarefa:', {
+      taskId: draggedTask,
+      userKey,
+      newUserId,
+      originalDuration,
+      newStartDate: format(newStartDate, 'yyyy-MM-dd'),
+      newEndDate: format(newEndDate, 'yyyy-MM-dd')
+    });
 
     onTaskUpdate(draggedTask, {
       start_date: format(newStartDate, 'yyyy-MM-dd'),

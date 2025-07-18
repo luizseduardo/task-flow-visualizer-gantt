@@ -36,6 +36,8 @@ export const useTasks = () => {
 
   const createTask = async (taskData: TaskFormData) => {
     try {
+      console.log('💾 Criando tarefa no banco:', taskData);
+      
       const { data, error } = await supabase
         .from('tasks')
         .insert(taskData)
@@ -46,6 +48,8 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
+      
+      console.log('💾 Tarefa criada no banco:', data);
       
       const newTask = {
         ...data,
@@ -64,6 +68,8 @@ export const useTasks = () => {
 
   const updateTask = async (id: number, updates: Partial<TaskFormData>) => {
     try {
+      console.log('🔄 Atualizando tarefa no banco:', { id, updates });
+      
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -75,6 +81,8 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
+      
+      console.log('🔄 Tarefa atualizada no banco:', data);
       
       const updatedTask = {
         ...data,

@@ -15,6 +15,8 @@ interface GanttControlsProps {
   onAddUser: (userData: { name: string; email?: string }) => void;
   onRemoveUser: (userId: number) => void;
   onNewTask: () => void;
+  customStartDate?: Date | null;
+  customEndDate?: Date | null;
 }
 
 export const GanttControls: React.FC<GanttControlsProps> = ({
@@ -24,14 +26,16 @@ export const GanttControls: React.FC<GanttControlsProps> = ({
   onDateRangeChange,
   onAddUser,
   onRemoveUser,
-  onNewTask
+  onNewTask,
+  customStartDate,
+  customEndDate
 }) => {
   const [isDateDialogOpen, setIsDateDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [tempStartDate, setTempStartDate] = useState(startDate.toISOString().split('T')[0]);
-  const [tempEndDate, setTempEndDate] = useState(endDate.toISOString().split('T')[0]);
+  const [tempStartDate, setTempStartDate] = useState((customStartDate || startDate).toISOString().split('T')[0]);
+  const [tempEndDate, setTempEndDate] = useState((customEndDate || endDate).toISOString().split('T')[0]);
 
   const handleDateRangeUpdate = () => {
     const newStart = new Date(tempStartDate);
@@ -162,7 +166,7 @@ export const GanttControls: React.FC<GanttControlsProps> = ({
       </Dialog>
 
       <div className="text-sm text-gray-600 ml-auto">
-        {startDate.toLocaleDateString('pt-BR')} - {endDate.toLocaleDateString('pt-BR')}
+        🗓️ {(customStartDate || startDate).toLocaleDateString('pt-BR')} - {(customEndDate || endDate).toLocaleDateString('pt-BR')}
       </div>
     </div>
   );
