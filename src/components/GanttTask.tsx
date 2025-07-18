@@ -39,22 +39,22 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
     }
   };
 
-  // ✅ NOVA FUNÇÃO: Cores sutis por responsável
-  const getUserColor = (userId?: number) => {
-    if (!userId) return '';
+  // ✅ MELHORIA: Cores mais sutis e modernas por responsável
+  const getUserAccent = (userId?: number) => {
+    if (!userId) return { bg: '', text: '' };
     
-    const colors = [
-      'border-l-blue-300',
-      'border-l-green-300', 
-      'border-l-purple-300',
-      'border-l-orange-300',
-      'border-l-pink-300',
-      'border-l-indigo-300',
-      'border-l-red-300',
-      'border-l-yellow-300'
+    const accents = [
+      { bg: 'bg-blue-50', text: 'text-blue-900' },
+      { bg: 'bg-green-50', text: 'text-green-900' }, 
+      { bg: 'bg-purple-50', text: 'text-purple-900' },
+      { bg: 'bg-orange-50', text: 'text-orange-900' },
+      { bg: 'bg-pink-50', text: 'text-pink-900' },
+      { bg: 'bg-indigo-50', text: 'text-indigo-900' },
+      { bg: 'bg-red-50', text: 'text-red-900' },
+      { bg: 'bg-yellow-50', text: 'text-yellow-900' }
     ];
     
-    return colors[userId % colors.length];
+    return accents[userId % accents.length];
   };
 
   const getStatusText = (status: string) => {
@@ -75,12 +75,14 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
     e.dataTransfer.effectAllowed = 'move';
   };
 
+  const userAccent = getUserAccent(task.assigned_to);
+
   return (
     <div
       className={cn(
-        'absolute top-2 h-12 rounded cursor-move transition-all duration-200 group border-l-4',
+        'absolute top-2 h-12 rounded cursor-move transition-all duration-200 group',
         getStatusColor(task.status),
-        getUserColor(task.assigned_to),
+        userAccent.bg,
         isDragging && 'opacity-70 scale-105 shadow-lg z-10'
       )}
       style={{
@@ -92,10 +94,12 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
       draggable
       onDragStart={handleDragStart}
     >
-      <div className="flex items-center justify-between h-full px-2 text-white text-sm">
+      <div className="flex items-center justify-between h-full px-2 text-sm">
         <div className="flex-1 min-w-0">
-          <div className="font-medium truncate">{task.name}</div>
-          <div className="text-xs opacity-90">
+          <div className={cn("font-medium truncate", userAccent.text || "text-white")}>
+            {task.name}
+          </div>
+          <div className={cn("text-xs opacity-75", userAccent.text || "text-white")}>
             {getStatusText(task.status)} • {position.duration} dias úteis
           </div>
         </div>
@@ -104,7 +108,10 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 w-6 p-0 text-white hover:bg-white/20"
+            className={cn(
+              "h-6 w-6 p-0 hover:bg-black/10",
+              userAccent.text || "text-white hover:bg-white/20"
+            )}
             onClick={(e) => {
               e.stopPropagation();
               onEdit();
@@ -115,7 +122,10 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 w-6 p-0 text-white hover:bg-white/20"
+            className={cn(
+              "h-6 w-6 p-0 hover:bg-black/10",
+              userAccent.text || "text-white hover:bg-white/20"
+            )}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();

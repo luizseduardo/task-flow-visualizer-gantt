@@ -38,8 +38,9 @@ export const GanttControls: React.FC<GanttControlsProps> = ({
   const [tempEndDate, setTempEndDate] = useState((customEndDate || endDate).toISOString().split('T')[0]);
 
   const handleDateRangeUpdate = () => {
-    const newStart = new Date(tempStartDate);
-    const newEnd = new Date(tempEndDate);
+    // ✅ CORREÇÃO: Criar datas locais sem timezone shifts
+    const newStart = new Date(tempStartDate + 'T00:00:00');
+    const newEnd = new Date(tempEndDate + 'T00:00:00');
     
     if (newStart <= newEnd) {
       onDateRangeChange(newStart, newEnd);
