@@ -39,6 +39,24 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
     }
   };
 
+  // ✅ NOVA FUNÇÃO: Cores sutis por responsável
+  const getUserColor = (userId?: number) => {
+    if (!userId) return '';
+    
+    const colors = [
+      'border-l-blue-300',
+      'border-l-green-300', 
+      'border-l-purple-300',
+      'border-l-orange-300',
+      'border-l-pink-300',
+      'border-l-indigo-300',
+      'border-l-red-300',
+      'border-l-yellow-300'
+    ];
+    
+    return colors[userId % colors.length];
+  };
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pendente':
@@ -60,8 +78,9 @@ export const GanttTask: React.FC<GanttTaskProps> = ({
   return (
     <div
       className={cn(
-        'absolute top-2 h-12 rounded cursor-move transition-all duration-200 group',
+        'absolute top-2 h-12 rounded cursor-move transition-all duration-200 group border-l-4',
         getStatusColor(task.status),
+        getUserColor(task.assigned_to),
         isDragging && 'opacity-70 scale-105 shadow-lg z-10'
       )}
       style={{

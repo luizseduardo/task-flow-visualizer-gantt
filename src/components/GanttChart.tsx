@@ -39,8 +39,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     let end: Date;
 
     if (customStartDate && customEndDate) {
-      start = startOfWeek(customStartDate, { locale: ptBR });
-      end = endOfWeek(customEndDate, { locale: ptBR });
+      // ✅ CORREÇÃO: Usar EXATAMENTE as datas selecionadas, não startOfWeek/endOfWeek
+      start = customStartDate;
+      end = customEndDate;
     } else if (tasks.length === 0) {
       const today = new Date();
       start = startOfWeek(today, { locale: ptBR });
